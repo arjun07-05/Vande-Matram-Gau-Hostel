@@ -1,0 +1,38 @@
+# Node modules
+node_modules/
+npm-debug.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+
+# Environment Variables
+.env
+.env.production
+.env.local
+
+# Builds
+dist/
+build/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Logs and Uploads
+logs/
+uploads/
+*.log
+backend_uploads/
+
+# Test Caches
+.pytest_cache/
+coverage/
+
+# Editor
+.vscode/
+.idea/
