@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.routes import auth, users, cows, milk, members, distribution, dashboard, settings, cow_types, reports
+from app.routes import auth, users, cows, milk, members, distribution, dashboard, settings, cow_types, reports, materials, expenses
 
 api_router = APIRouter()
 
@@ -13,3 +13,5 @@ api_router.include_router(distribution.router, prefix="/distribution", tags=["di
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 api_router.include_router(settings.router, prefix="/settings", tags=["settings"])
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
+api_router.include_router(materials.router, prefix="/materials", tags=["materials"])
+api_router.include_router(expenses.router, prefix="/expenses", tags=["expenses"])

@@ -1,12 +1,13 @@
 {
   "name": "gau-hostel-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host --port 3000",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -14,6 +15,7 @@
     "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^5.16.0",
     "@mui/material": "^5.16.0",
+    "@sarthak1407/react-transliterate": "^2.6.1",
     "@tanstack/react-query": "^5.51.1",
     "axios": "^1.7.2",
     "chart.js": "^4.4.3",
@@ -25,7 +27,6 @@
     "react-hook-form": "^7.52.1",
     "react-i18next": "^17.0.11",
     "react-router-dom": "^6.25.1",
-    "react-transliterate": "^1.1.9",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

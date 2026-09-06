@@ -22,18 +22,24 @@ def create_bulk_milk_entries(
             db, cow_id=entry_in.cow_id, target_date=entry_in.date, shift=entry_in.shift
         )
         if existing:
-            # Update existing
-            obj = crud.milk.update(db, db_obj=existing, obj_in=entry_in)
-            results.append(obj)
+            if entry_in.milk_qty is None or entry_in.milk_qty <= 0:
+                # User cleared this entry
+                db.delete(existing)
+                db.commit()
+            else:
+                # Update existing
+                obj = crud.milk.update(db, db_obj=existing, obj_in=entry_in)
+                results.append(obj)
         else:
-            # Create new
-            obj_data = entry_in.model_dump()
-            obj_data["created_by"] = current_user.id
-            db_obj = models.MilkEntry(**obj_data)
-            db.add(db_obj)
-            db.commit()
-            db.refresh(db_obj)
-            results.append(db_obj)
+            if entry_in.milk_qty and entry_in.milk_qty > 0:
+                # Create new only if milk_qty > 0
+                obj_data = entry_in.model_dump()
+                obj_data["created_by"] = current_user.id
+                db_obj = models.MilkEntry(**obj_data)
+                db.add(db_obj)
+                db.commit()
+                db.refresh(db_obj)
+                results.append(db_obj)
     return results
 
 @router.get("/today", response_model=List[schemas.MilkEntry])

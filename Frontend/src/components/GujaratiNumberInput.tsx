@@ -24,13 +24,15 @@ interface GujaratiNumberInputProps extends Omit<TextFieldProps, 'name' | 'value'
   onChangeValue?: (val: string) => void;
 }
 
-const GujaratiNumberInput: React.FC<GujaratiNumberInputProps> = ({ 
-  name, 
-  control, 
-  rules, 
-  value, 
-  onChangeValue, 
-  ...props 
+const GujaratiNumberInput: React.FC<GujaratiNumberInputProps> = ({
+  name,
+  control,
+  rules,
+  value,
+  onChangeValue,
+  size = "small",
+  margin = "none",
+  ...props
 }) => {
   const { i18n } = useTranslation();
   const isGujarati = i18n.language && i18n.language.startsWith('gu');
@@ -51,6 +53,9 @@ const GujaratiNumberInput: React.FC<GujaratiNumberInputProps> = ({
         render={({ field: { onChange, onBlur, value: rhfValue, ref }, fieldState: { error } }) => (
           <TextField
             {...props}
+            size={size}
+            margin={margin}
+            InputLabelProps={{ shrink: true, ...props.InputLabelProps }}
             inputProps={{ inputMode: 'decimal', ...props.inputProps }}
             error={!!error || props.error}
             helperText={error?.message || props.helperText}
@@ -68,6 +73,9 @@ const GujaratiNumberInput: React.FC<GujaratiNumberInputProps> = ({
   return (
     <TextField
       {...props}
+      size={size}
+      margin={margin}
+      InputLabelProps={{ shrink: true, ...props.InputLabelProps }}
       inputProps={{ inputMode: 'decimal', ...props.inputProps }}
       onChange={(e) => handleChange(e.target.value)}
       value={isGujarati ? formatGujaratiNumber(value, 'gu') : (value || '')}

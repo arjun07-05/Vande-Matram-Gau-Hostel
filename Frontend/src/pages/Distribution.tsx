@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import DisplayNumber from '../components/DisplayNumber';
 import { useAuth } from '../contexts/AuthContext';
+import { getErrorMessage } from '../utils/formatError';
 
 const Distribution = () => {
   const { t } = useTranslation();
@@ -15,7 +16,7 @@ const Distribution = () => {
   const { user } = useAuth();
   const isGowal = user?.role === 'Gowal';
   const canReceive = user?.role === 'Admin' || user?.role === 'Gowal';
-  
+
   const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [shift, setShift] = useState(dayjs().hour() < 12 ? 'Morning' : 'Evening');
   const [selectedMember, setSelectedMember] = useState<any>(null);
@@ -62,7 +63,7 @@ const Distribution = () => {
   });
 
   const reassignMutation = useMutation({
-    mutationFn: ({ distId, newMemberId }: { distId: number, newMemberId: number | null }) => 
+    mutationFn: ({ distId, newMemberId }: { distId: number, newMemberId: number | null }) =>
       axiosClient.put(`/distribution/reassign/${distId}${newMemberId ? `?new_member_id=${newMemberId}` : ''}`),
     onMutate: ({ distId }) => {
       setReassigningIds(prev => [...prev, distId]);
@@ -71,7 +72,7 @@ const Distribution = () => {
       queryClient.invalidateQueries({ queryKey: ['distribution', date, shift] });
     },
     onError: (error: any) => {
-      alert(error?.response?.data?.detail || error.message || 'An error occurred while reassigning.');
+      alert(getErrorMessage(error, 'An error occurred while reassigning.'));
     },
     onSettled: (data, error, { distId }) => {
       setReassigningIds(prev => prev.filter(id => id !== distId));
@@ -112,19 +113,19 @@ const Distribution = () => {
     <MainLayout title={t('distribution.title')}>
       <Card sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <TextField 
-            label={t('distribution.date')} 
-            type="date" 
-            value={date} 
-            onChange={(e) => setDate(e.target.value)} 
+          <TextField
+            label={t('distribution.date')}
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
             InputLabelProps={{ shrink: true }}
             size="small"
             sx={{ flex: 1, minWidth: 130 }}
           />
-          <TextField 
-            select 
-            label={t('distribution.shift')} 
-            value={shift} 
+          <TextField
+            select
+            label={t('distribution.shift')}
+            value={shift}
             onChange={(e) => setShift(e.target.value)}
             size="small"
             sx={{ flex: 1, minWidth: 130 }}
@@ -193,7 +194,7 @@ const Distribution = () => {
                     </TableCell>
                     <TableCell align="center" sx={{ whiteSpace: 'nowrap', px: { xs: 0, sm: 2 }, width: { xs: '80px', sm: '120px' } }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '60px' }}>
-                        <IconButton 
+                        <IconButton
                           color={!dist.received ? "primary" : "success"}
                           onClick={() => receiveMutation.mutate(dist.id)}
                           disabled={!canReceive}
@@ -206,11 +207,11 @@ const Distribution = () => {
                             <CheckCircle sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }} />
                           )}
                         </IconButton>
-                        
-                        <Typography 
-                          variant="caption" 
-                          sx={{ 
-                            mt: -0.5, 
+
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            mt: -0.5,
                             fontSize: { xs: '0.6rem', sm: '0.75rem' },
                             visibility: dist.received ? 'visible' : 'hidden',
                             color: 'text.secondary'
@@ -220,9 +221,9 @@ const Distribution = () => {
                         </Typography>
 
                         {dist.assigned_to && (
-                          <Typography 
-                            variant="caption" 
-                            color={!dist.received ? "primary" : "success.main"} 
+                          <Typography
+                            variant="caption"
+                            color={!dist.received ? "primary" : "success.main"}
                             sx={{ mt: 0, fontWeight: 'bold', fontSize: { xs: '0.6rem', sm: '0.75rem' } }}
                           >
                             ({dist.assigned_to.name})
@@ -245,12 +246,12 @@ const Distribution = () => {
                               }
                             }}
                             disabled={reassigningIds.includes(dist.id) || user?.role !== 'Admin'}
-                            sx={{ 
+                            sx={{
                               width: { xs: 35, sm: 'auto' },
-                              minWidth: { xs: 35, sm: 150 }, 
-                              maxWidth: { xs: 35, sm: 200 }, 
+                              minWidth: { xs: 35, sm: 150 },
+                              maxWidth: { xs: 35, sm: 200 },
                               textAlign: 'left',
-                              '& .MuiInputBase-root': { 
+                              '& .MuiInputBase-root': {
                                   fontSize: { xs: '0.7rem', sm: '0.875rem' }
                               },
                               '& .MuiSelect-select': {

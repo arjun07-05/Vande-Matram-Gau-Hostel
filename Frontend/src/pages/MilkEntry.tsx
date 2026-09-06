@@ -13,7 +13,7 @@ const MilkEntry = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const canEdit = user?.role === 'Admin' || user?.role === 'Entry';
-  
+
   const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [shift, setShift] = useState(dayjs().hour() < 12 ? 'Morning' : 'Evening');
   const [entries, setEntries] = useState<Record<number, string>>({});
@@ -25,9 +25,9 @@ const MilkEntry = () => {
       return (Array.isArray(res.data) ? res.data : []).filter((c: any) => {
         if (!c.type) return false;
         const t_val = c.type.trim();
-        return t_val === 'milk' || 
-               t_val === 'Milk' || 
-               t_val === 'દૂધ આપતી' || 
+        return t_val === 'milk' ||
+               t_val === 'Milk' ||
+               t_val === 'દૂધ આપતી' ||
                t_val === t('cows.typeMilk');
       });
     }
@@ -85,9 +85,26 @@ const MilkEntry = () => {
 
   const handleBlur = (cowId: number) => {
     const val = entries[cowId];
-    if (val !== undefined && val !== '') {
+    if (val === undefined || val === null || val.toString().trim() === '') {
+      // User cleared the box
+      setEntries(prev => {
+        const next = { ...prev };
+        delete next[cowId];
+        return next;
+      });
+      if (canEdit) {
+        mutation.mutate({
+          entries: [{
+            cow_id: cowId,
+            date: date,
+            shift: shift,
+            milk_qty: 0
+          }]
+        });
+      }
+    } else {
       const parsed = parseFloat(val);
-      if (!isNaN(parsed)) {
+      if (!isNaN(parsed) && parsed > 0) {
         setEntries(prev => ({ ...prev, [cowId]: parsed.toFixed(3) }));
         if (canEdit) {
           mutation.mutate({
@@ -99,19 +116,38 @@ const MilkEntry = () => {
             }]
           });
         }
+      } else {
+        // Zero or non-numeric input
+        setEntries(prev => {
+          const next = { ...prev };
+          delete next[cowId];
+          return next;
+        });
+        if (canEdit) {
+          mutation.mutate({
+            entries: [{
+              cow_id: cowId,
+              date: date,
+              shift: shift,
+              milk_qty: 0
+            }]
+          });
+        }
       }
     }
   };
 
 
 
-  const totalMilk = Object.values(entries).reduce((sum, val) => {
+  const totalCowMilk = Object.values(entries).reduce((sum, val) => {
     const num = parseFloat(val);
     return sum + (isNaN(num) ? 0 : num);
   }, 0);
 
   const gowalMilk = shift === 'Morning' ? (settings?.morning_gowal_milk || 2.0) : (settings?.evening_gowal_milk || 2.0);
-  const bakiMilk = Math.max(0, totalMilk - gowalMilk);
+  const otherDeductionMilk = shift === 'Morning' ? (settings?.morning_other_milk || 0.0) : (settings?.evening_other_milk || 0.0);
+
+  const bakiMilk = Math.max(0, totalCowMilk - gowalMilk - otherDeductionMilk);
   const shiftMembersCount = members ? members.filter((m: any) => m.milk_preference === 'Both' || m.milk_preference === shift).length : 0;
   const sabhyaMilk = shiftMembersCount > 0 ? (bakiMilk / shiftMembersCount) : 0;
 
@@ -121,18 +157,18 @@ const MilkEntry = () => {
     <MainLayout title={t('milk.title')}>
       <Card sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <TextField 
-            label={t('milk.date')} 
-            type="date" 
-            value={date} 
-            onChange={(e) => setDate(e.target.value)} 
+          <TextField
+            label={t('milk.date')}
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
             InputLabelProps={{ shrink: true }}
             sx={{ flex: 1, minWidth: 130 }}
           />
-          <TextField 
-            select 
-            label={t('milk.shift')} 
-            value={shift} 
+          <TextField
+            select
+            label={t('milk.shift')}
+            value={shift}
             onChange={(e) => setShift(e.target.value)}
             sx={{ flex: 1, minWidth: 130 }}
           >
@@ -173,28 +209,36 @@ const MilkEntry = () => {
               ))}
               {cows && cows.length > 0 && (
                 <>
-                  <TableRow sx={{ backgroundColor: '#e3f2fd', '& td': { color: '#1565c0', fontWeight: 'bold', fontSize: '1.1rem', borderTop: '2px solid #90caf9' } }}>
-                    <TableCell colSpan={2} align="right">{t('milk.total')}</TableCell>
+                  <TableRow sx={{ backgroundColor: '#e3f2fd', '& td': { color: '#1565c0', fontWeight: 'bold', fontSize: '1.05rem', borderTop: '2px solid #90caf9' } }}>
+                    <TableCell colSpan={2} align="right">ગાયોનું કુલ દૂધ (Total Cow Milk)</TableCell>
                     <TableCell>
-                      <DisplayNumber value={totalMilk.toFixed(3)} />
+                      <DisplayNumber value={totalCowMilk.toFixed(3)} />
                     </TableCell>
                   </TableRow>
-                  {totalMilk > 0 && (
+                  {totalCowMilk > 0 && (
                     <>
                       <TableRow sx={{ backgroundColor: '#fff9c4', '& td': { color: '#f57f17', fontWeight: 'bold' } }}>
-                        <TableCell colSpan={2} align="right">ગોવાળનું દૂધ</TableCell>
+                        <TableCell colSpan={2} align="right">- ગોવાળનું દૂધ (Gowal Milk)</TableCell>
                         <TableCell>
                           <DisplayNumber value={gowalMilk.toFixed(3)} />
                         </TableCell>
                       </TableRow>
+                      {otherDeductionMilk > 0 && (
+                        <TableRow sx={{ backgroundColor: '#fef2f2', '& td': { color: '#dc2626', fontWeight: 'bold' } }}>
+                          <TableCell colSpan={2} align="right">- અન્ય બાદબાકી / સાઈડ-આઉટ (Other Deduction)</TableCell>
+                          <TableCell>
+                            <DisplayNumber value={otherDeductionMilk.toFixed(3)} />
+                          </TableCell>
+                        </TableRow>
+                      )}
                       <TableRow sx={{ backgroundColor: '#ffe0b2', '& td': { color: '#e65100', fontWeight: 'bold' } }}>
-                        <TableCell colSpan={2} align="right">બાકીનું દૂધ</TableCell>
+                        <TableCell colSpan={2} align="right">વિતરણ માટે બાકી દૂધ (Available for Distribution)</TableCell>
                         <TableCell>
                           <DisplayNumber value={bakiMilk.toFixed(3)} />
                         </TableCell>
                       </TableRow>
                       <TableRow sx={{ backgroundColor: '#c8e6c9', '& td': { color: '#1b5e20', fontWeight: 'bold', fontSize: '1.1rem', borderBottom: '2px solid #81c784' } }}>
-                        <TableCell colSpan={2} align="right">સભ્યોનું દૂધ (સભ્ય દીઠ)</TableCell>
+                        <TableCell colSpan={2} align="right">સભ્યોનું દૂધ (સભ્ય દીઠ / Per Member)</TableCell>
                         <TableCell>
                           <DisplayNumber value={sabhyaMilk.toFixed(3)} />
                         </TableCell>

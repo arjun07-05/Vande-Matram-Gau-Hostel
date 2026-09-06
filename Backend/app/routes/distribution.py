@@ -19,16 +19,15 @@ def generate_distribution(
     # Get total milk for the shift
     milk_entries = crud.milk.get_by_date_and_shift(db, target_date=target_date, shift=shift)
     total_milk = sum(entry.milk_qty for entry in milk_entries)
-    
+
     settings = crud.settings.get_settings(db)
     gowal_milk = settings.morning_gowal_milk if shift == 'Morning' else settings.evening_gowal_milk
-    
-    remaining_milk = total_milk - gowal_milk
-    if remaining_milk < 0:
-        remaining_milk = 0
+    other_milk = (settings.morning_other_milk or 0.0) if shift == 'Morning' else (settings.evening_other_milk or 0.0)
+
+    remaining_milk = max(0, total_milk - gowal_milk - other_milk)
 
     active_members = crud.member.get_active_members(db)
-    
+
     # Filter members by preference
     eligible_members = []
     for m in active_members:
@@ -47,7 +46,7 @@ def generate_distribution(
             models.DailyDistribution.date == target_date,
             models.DailyDistribution.shift == shift
         ).all()
-        
+
         if not existings:
             obj_in = schemas.DailyDistributionCreate(
                 member_id=member.id,
@@ -64,7 +63,7 @@ def generate_distribution(
                 for extra in existings[1:]:
                     db.delete(extra)
                 db.commit()
-                
+
             # Update quantity if not received
             if not existing.received:
                 obj = crud.distribution.update(db, db_obj=existing, obj_in={"milk_qty": milk_per_member})
@@ -85,14 +84,15 @@ def manual_distribution(
     # 1. Calculate milk_per_member exactly like generate
     milk_entries = crud.milk.get_by_date_and_shift(db, target_date=target_date, shift=shift)
     total_milk = sum(entry.milk_qty for entry in milk_entries)
-    
+
     settings = crud.settings.get_settings(db)
     gowal_milk = settings.morning_gowal_milk if shift == 'Morning' else settings.evening_gowal_milk
-    remaining_milk = max(0, total_milk - gowal_milk)
+    other_milk = (settings.morning_other_milk or 0.0) if shift == 'Morning' else (settings.evening_other_milk or 0.0)
+    remaining_milk = max(0, total_milk - gowal_milk - other_milk)
 
     active_members = crud.member.get_active_members(db)
     eligible_members = [m for m in active_members if m.milk_preference in ("Both", shift)]
-    
+
     milk_per_member = remaining_milk / len(eligible_members) if remaining_milk > 0 and eligible_members else 0
 
     # 2. Check if this member already has an entry
@@ -101,7 +101,7 @@ def manual_distribution(
         models.DailyDistribution.date == target_date,
         models.DailyDistribution.shift == shift
     ).all()
-    
+
     if not existings:
         obj_in = schemas.DailyDistributionCreate(
             member_id=member_id,
@@ -116,10 +116,10 @@ def manual_distribution(
             for extra in existings[1:]:
                 db.delete(extra)
             db.commit()
-            
+
         # Update existing
         obj = crud.distribution.update(db, db_obj=existing, obj_in={"milk_qty": milk_per_member})
-        
+
     return obj
 
 @router.get("/", response_model=List[schemas.DailyDistribution])
@@ -142,7 +142,7 @@ def receive_milk(
     dist = crud.distribution.get(db, id=dist_id)
     if not dist:
         raise HTTPException(status_code=404, detail="Distribution entry not found")
-    
+
     if dist.received:
         obj_in = {
             "received": False,
@@ -169,7 +169,7 @@ def reassign_distribution(
     dist = crud.distribution.get(db, id=dist_id)
     if not dist:
         raise HTTPException(status_code=404, detail="Distribution entry not found")
-    
+
     # Just update the assigned_to_id to indicate someone else is picking it up
     dist = crud.distribution.update(db, db_obj=dist, obj_in={"assigned_to_id": new_member_id})
     return dist

@@ -1,22 +1,19 @@
+import logging
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
 from app.core.config import settings
 from app.api.api_router import api_router
-from app.database.session import engine, SessionLocal
-from app.database.base import Base
+from app.database.session import SessionLocal
 from app.core.init_db import init_db
-import logging
-import os
 
-# Configure logging
+# Configure structured application logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler("app.log", mode="a", encoding="utf-8") if os.path.exists("logs") else logging.StreamHandler()
-    ]
+    handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger(__name__)
 
@@ -26,15 +23,19 @@ app = FastAPI(
 )
 
 # Set CORS allowed origins
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost", "https://localhost"],
-    allow_origin_regex=os.getenv("CORS_ORIGINS_REGEX", r"https?://.*\.compute-1\.amazonaws\.com"),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+cors_kwargs = {
+    "allow_origins": settings.get_cors_origins(),
+    "allow_credentials": True,
+    "allow_methods": ["*"],
+    "allow_headers": ["*"],
+}
 
+if settings.CORS_ORIGINS_REGEX:
+    cors_kwargs["allow_origin_regex"] = settings.CORS_ORIGINS_REGEX
+
+app.add_middleware(CORSMiddleware, **cors_kwargs)
+
+# Static files for uploads (Cow photos, member photos, system logo)
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
@@ -42,12 +43,14 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.on_event("startup")
 def on_startup():
-    # Database tables should be created and managed by Alembic in production.
-    # We leave the initialization of default data, but wrapped in a try/except or strictly using migrations.
-    pass
+    try:
+        db = SessionLocal()
+        init_db(db)
+        db.close()
+        logger.info("Application startup check completed.")
+    except Exception as e:
+        logger.error(f"Error during startup init check: {e}")
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to Vande Mataram Gau Hostel API"}
-
-
+    return {"message": "Welcome to Vande Mataram Gau Hostel API", "status": "healthy"}

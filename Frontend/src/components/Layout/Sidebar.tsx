@@ -1,6 +1,6 @@
 import React from 'react';
 import { Drawer, List, ListItem, ListItemIcon, ListItemText, Toolbar, Box, Typography, IconButton } from '@mui/material';
-import { Dashboard, Pets, LocalDrink, People, Assignment, Settings, Logout, Close } from '@mui/icons-material';
+import { Dashboard, Pets, LocalDrink, People, Assignment, Settings, Logout, Close, Inventory2, AccountBalanceWallet } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -21,9 +21,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   const menuItems = [
     { text: t('menu.dashboard'), icon: <Dashboard />, path: '/' },
     { text: t('menu.milk'), icon: <LocalDrink />, path: '/milk' },
+    { text: t('menu.distribution'), icon: <LocalDrink />, path: '/distribution' },
     { text: t('menu.cows'), icon: <Pets />, path: '/cows' },
     { text: t('menu.members'), icon: <People />, path: '/members' },
-    { text: t('menu.distribution'), icon: <LocalDrink />, path: '/distribution' },
+    { text: t('menu.materials', 'સામાન વ્યવસ્થાપન'), icon: <Inventory2 />, path: '/materials' },
+    { text: t('menu.expenses', 'ખર્ચ અને વહેંચણી'), icon: <AccountBalanceWallet />, path: '/expenses' },
     { text: t('menu.reports'), icon: <Assignment />, path: '/reports' },
     { text: t('menu.settings'), icon: <Settings />, path: '/settings' },
   ];
@@ -47,11 +49,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
         keepMounted: true, // Better open performance on mobile.
       }}
       sx={{
-        '& .MuiDrawer-paper': { 
-          width: drawerWidth, 
-          boxSizing: 'border-box', 
-          backgroundColor: '#ffffff', 
-          color: '#333333' 
+        '& .MuiDrawer-paper': {
+          width: drawerWidth,
+          boxSizing: 'border-box',
+          backgroundColor: '#ffffff',
+          color: '#333333'
         },
       }}
     >
@@ -63,20 +65,20 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
           <Close />
         </IconButton>
       </Toolbar>
-      <Box sx={{ 
-        overflowY: 'auto', 
+      <Box sx={{
+        overflowY: 'auto',
         mt: 2,
-        '&::-webkit-scrollbar': { display: 'none' }, 
-        msOverflowStyle: 'none', 
+        '&::-webkit-scrollbar': { display: 'none' },
+        msOverflowStyle: 'none',
         scrollbarWidth: 'none'
       }}>
         <List>
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
-              <ListItem 
-                button 
-                key={item.text} 
+              <ListItem
+                button
+                key={item.text}
                 onClick={() => handleNavigate(item.path)}
                 sx={{
                   backgroundColor: isActive ? 'rgba(245, 124, 0, 0.1)' : 'transparent',

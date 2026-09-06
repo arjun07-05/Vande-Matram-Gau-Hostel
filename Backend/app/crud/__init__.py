@@ -3,3 +3,5 @@ from .crud_cow import cow
 from .crud_milk import milk
 from .crud_member import member, distribution
 from .crud_settings import settings
+from .crud_material import material, material_usage, material_contribution
+from .crud_expense import expense

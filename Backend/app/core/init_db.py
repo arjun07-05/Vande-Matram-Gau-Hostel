@@ -1,53 +1,47 @@
 import logging
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
-from app import crud, schemas
+from app import crud, schemas, models
 from app.core.config import settings
+from app.core.security import get_password_hash
 
 logger = logging.getLogger(__name__)
 
 def init_db(db: Session) -> None:
-    users_to_seed = [
-        {
-            "email": "admin@gauhostel.com",
-            "password": "KBHAdmin123",
-            "name": "Super Admin",
-            "role": "Admin"
-        },
-        {
-            "email": "entry@gauhostel.com",
-            "password": "entrygauhostel",
-            "name": "Milk Entry",
-            "role": "Entry"
-        },
-        {
-            "email": "viewer@gauhostel.com",
-            "password": "viewergauhostel",
-            "name": "Viewer",
-            "role": "Viewer"
-        },
-        {
-            "email": "gowal@gauhostel.com",
-            "password": "gowalgauhostel",
-            "name": "Gowal",
-            "role": "Gowal"
-        }
-    ]
-
-    for u in users_to_seed:
-        user = crud.user.get_by_email(db, email=u["email"])
-        if not user:
-            user_in = schemas.UserCreate(**u)
-            try:
-                crud.user.create(db, obj_in=user_in)
-                logger.info(f"User {u['email']} created successfully.")
-            except IntegrityError:
-                db.rollback()
-                logger.info(f"User {u['email']} already exists (caught IntegrityError).")
-        else:
-            # If user exists, we update their password to ensure it matches the new requirement
-            from app.core.security import get_password_hash
-            user.password_hash = get_password_hash(u["password"])
-            user.role = u["role"]
+    """
+    Initial database seeding for fresh installations.
+    Schema creation and migrations are strictly managed by Alembic.
+    Only seeds the initial admin and default settings if no data exists.
+    """
+    try:
+        # 1. Seed initial settings if none exist
+        existing_settings = crud.settings.get_settings(db)
+        if not existing_settings:
+            default_settings = models.Settings(
+                morning_gowal_milk=2.0,
+                evening_gowal_milk=2.0,
+                morning_other_milk=0.0,
+                evening_other_milk=0.0,
+                unit="Liter",
+                member_mode="Automatic"
+            )
+            db.add(default_settings)
             db.commit()
-            logger.info(f"User {u['email']} updated successfully.")
+            logger.info("Default application settings initialized.")
+
+        # 2. Seed initial administrator ONLY if no users exist in the system
+        user_count = db.query(models.User).count()
+        if user_count == 0:
+            admin_in = schemas.UserCreate(
+                email=settings.INITIAL_ADMIN_EMAIL,
+                password=settings.INITIAL_ADMIN_PASSWORD,
+                name=settings.INITIAL_ADMIN_NAME,
+                role="Admin"
+            )
+            crud.user.create(db, obj_in=admin_in)
+            logger.info(f"Initial administrator ({settings.INITIAL_ADMIN_EMAIL}) created successfully.")
+        else:
+            logger.info("Users exist in database; skipping initial user seeding.")
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error during init_db check: {e}")

@@ -8,6 +8,8 @@ import MilkEntry from './pages/MilkEntry';
 import Members from './pages/Members';
 import Distribution from './pages/Distribution';
 import Reports from './pages/Reports';
+import Materials from './pages/Materials';
+import Expenses from './pages/Expenses';
 import Settings from './pages/Settings';
 
 import { CircularProgress, Box, Typography } from '@mui/material';
@@ -43,10 +45,10 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError:
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
-  
+
   if (loading) return <Box display="flex" justifyContent="center" mt={10}><CircularProgress /></Box>;
   if (!user) return <Navigate to="/login" />;
-  
+
   return <>{children}</>;
 };
 
@@ -62,6 +64,8 @@ function App() {
           <Route path="/members" element={<ProtectedRoute><Members /></ProtectedRoute>} />
           <Route path="/distribution" element={<ProtectedRoute><Distribution /></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+          <Route path="/materials" element={<ProtectedRoute><Materials /></ProtectedRoute>} />
+          <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>

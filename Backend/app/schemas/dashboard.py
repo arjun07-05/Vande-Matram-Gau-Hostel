@@ -7,6 +7,8 @@ class DashboardStats(BaseModel):
     evening_milk: float
     morning_gowal_milk: float
     evening_gowal_milk: float
+    morning_other_milk: float = 0.0
+    evening_other_milk: float = 0.0
     morning_remaining_milk: float
     evening_remaining_milk: float
     morning_members: int

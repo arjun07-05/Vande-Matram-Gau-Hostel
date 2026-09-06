@@ -1,86 +1,91 @@
 import React from 'react';
-import { TextField } from '@mui/material';
-import { ReactTransliterate } from 'react-transliterate';
-import 'react-transliterate/dist/index.css';
+import { TextField, TextFieldProps } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { Controller, Control } from 'react-hook-form';
+import {
+  ReactTransliterate,
+  Language,
+} from '@sarthak1407/react-transliterate';
 
-interface TransliteratedInputProps {
+interface TransliteratedInputProps
+  extends Omit<TextFieldProps, 'name' | 'value' | 'onChange'> {
   name: string;
   control: Control<any>;
   label: string;
-  fullWidth?: boolean;
-  margin?: "none" | "dense" | "normal";
   required?: boolean;
 }
 
-const TransliteratedInput: React.FC<TransliteratedInputProps> = ({ 
-  name, 
-  control, 
-  label, 
+const TransliteratedInput: React.FC<TransliteratedInputProps> = ({
+  name,
+  control,
+  label,
   fullWidth = true,
-  margin = "normal",
-  required = false
+  size = 'small',
+  margin = 'none',
+  required = false,
+  ...props
 }) => {
   const { i18n } = useTranslation();
+
+  const isGujarati =
+    !i18n.language || i18n.language.startsWith('gu');
 
   return (
     <Controller
       name={name}
       control={control}
-      rules={{ required: required ? `${label} is required` : false }}
-      render={({ field: { onChange, onBlur, value, ref: rhfRef }, fieldState: { error } }) => {
-        if (i18n.language && i18n.language.startsWith('gu')) {
+      rules={{
+        required: required ? `${label} is required` : false,
+      }}
+      render={({ field, fieldState: { error } }) => {
+        if (!isGujarati) {
           return (
-            <ReactTransliterate
-              renderComponent={(props) => {
-                const { ref: transliterateRef, ...rest } = props as any;
-                return (
-                  <TextField
-                    {...rest}
-                    label={label}
-                    fullWidth={fullWidth}
-                    margin={margin}
-                    error={!!error}
-                    helperText={error?.message}
-                    required={required}
-                    inputRef={(node) => {
-                      if (typeof transliterateRef === 'function') {
-                        transliterateRef(node);
-                      } else if (transliterateRef && 'current' in transliterateRef) {
-                        (transliterateRef as any).current = node;
-                      }
-                      if (typeof rhfRef === 'function') {
-                        rhfRef(node);
-                      } else if (rhfRef && 'current' in rhfRef) {
-                        (rhfRef as any).current = node;
-                      }
-                    }}
-                  />
-                );
+            <TextField
+              {...props}
+              {...field}
+              label={label}
+              fullWidth={fullWidth}
+              size={size}
+              margin={margin}
+              InputLabelProps={{
+                shrink: true,
+                ...props.InputLabelProps,
               }}
-              value={value || ""}
-              onChangeText={(text) => {
-                onChange(text);
-              }}
-              onBlur={onBlur}
-              lang="gu"
+              error={!!error || props.error}
+              helperText={error?.message || props.helperText}
+              required={required}
+              value={field.value || ''}
             />
           );
         }
 
         return (
-          <TextField
-            label={label}
-            fullWidth={fullWidth}
-            margin={margin}
-            required={required}
-            error={!!error}
-            helperText={error?.message}
-            onChange={onChange}
-            onBlur={onBlur}
-            value={value || ""}
-            inputRef={rhfRef}
+          <ReactTransliterate
+            value={field.value || ''}
+            onChangeText={field.onChange}
+            lang={'gu' as Language}
+            renderComponent={(inputProps: any) => {
+              const { ref, ...rest } = inputProps;
+
+              return (
+                <TextField
+                  {...props}
+                  {...rest}
+                  label={label}
+                  fullWidth={fullWidth}
+                  size={size}
+                  margin={margin}
+                  required={required}
+                  error={!!error || props.error}
+                  helperText={error?.message || props.helperText}
+                  InputLabelProps={{
+                    shrink: true,
+                    ...props.InputLabelProps,
+                  }}
+                  inputRef={ref}
+                />
+              );
+            }}
           />
         );
       }}
