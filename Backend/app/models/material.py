@@ -12,7 +12,7 @@ class Material(Base):
     unit = Column(String, default="નંગ", nullable=False)
     price_per_unit = Column(Float, default=0.0, nullable=False)
     total_price = Column(Float, default=0.0, nullable=False)
-    purchase_date = Column(Date, default=func.current_date(), nullable=False)
+    purchase_date = Column(Date, default=func.current_date(), nullable=False, index=True)
     supplier = Column(String, nullable=True)
     remarks = Column(Text, nullable=True)
 
@@ -26,7 +26,7 @@ class MaterialUsage(Base):
     item_name = Column(String, index=True, nullable=False)
     quantity_used = Column(Float, default=1.0, nullable=False)
     unit = Column(String, default="નંગ", nullable=False)
-    usage_date = Column(Date, default=func.current_date(), nullable=False)
+    usage_date = Column(Date, default=func.current_date(), nullable=False, index=True)
     purpose = Column(String, nullable=True)
     remarks = Column(Text, nullable=True)
 
@@ -39,7 +39,7 @@ class MaterialContribution(Base):
     id = Column(Integer, primary_key=True, index=True)
     member_id = Column(Integer, ForeignKey("members.id", ondelete="CASCADE"), nullable=False, index=True)
     amount = Column(Float, default=0.0, nullable=False) # Contributed money (₹)
-    contribution_date = Column(Date, default=func.current_date(), nullable=False)
+    contribution_date = Column(Date, default=func.current_date(), nullable=False, index=True)
     payment_mode = Column(String, default="Cash", nullable=True) # Cash, Online/UPI, Bank Transfer
     remarks = Column(Text, nullable=True)
 
